@@ -1,5 +1,6 @@
 """
 Aplikasi utama GUI untuk Image Resolver.
+Mendukung English dan Bahasa Indonesia.
 """
 
 import sys
@@ -14,6 +15,7 @@ from PIL import Image, ImageTk
 from src.constants import OUTPUT_FORMATS, EXT_MAP, INPUT_EXTS
 from src.image_processor import open_image, save_image, do_resize
 from src.ui_components import Tooltip, int_or_none, float_or_none, filetypes_input
+from src.localization import get_i18n, set_language
 
 
 class App(tk.Tk):
@@ -21,9 +23,11 @@ class App(tk.Tk):
     
     def __init__(self):
         super().__init__()
-        self.title("Image Converter & Resizer")
+        self.i18n = get_i18n()
+        self.title(self.i18n("title"))
         self.resizable(False, False)
         self._set_icon()
+        self._build_menu()
         self._build_ui()
         self.update_idletasks()
         sw = self.winfo_screenwidth()
@@ -39,6 +43,34 @@ class App(tk.Tk):
         except Exception:
             pass
 
+    def _build_menu(self):
+        """Build menu bar dengan language selector."""
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+        
+        lang_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Language", menu=lang_menu)
+        lang_menu.add_command(label="English", command=lambda: self._change_language("en"))
+        lang_menu.add_command(label="Bahasa Indonesia", command=lambda: self._change_language("id"))
+
+    def _change_language(self, lang: str):
+        """Ubah bahasa dan refresh UI."""
+        set_language(lang)
+        self.i18n = get_i18n()
+        self._rebuild_ui()
+
+    def _rebuild_ui(self):
+        """Rebuild UI dengan bahasa baru."""
+        # Clear existing tabs
+        for tab in self.tab_single, self.tab_resize, self.tab_batch:
+            for w in tab.winfo_children():
+                w.destroy()
+        
+        PAD = dict(padx=10, pady=4)
+        self._build_single(self.tab_single, PAD)
+        self._build_resize(self.tab_resize, PAD)
+        self._build_batch(self.tab_batch, PAD)
+
     def _build_ui(self):
         """Build seluruh UI aplikasi."""
         PAD = dict(padx=10, pady=4)
@@ -50,9 +82,9 @@ class App(tk.Tk):
         self.tab_resize = ttk.Frame(nb)
         self.tab_batch  = ttk.Frame(nb)
 
-        nb.add(self.tab_single, text="  Konversi  ")
-        nb.add(self.tab_resize, text="  Resize  ")
-        nb.add(self.tab_batch,  text="  Batch  ")
+        nb.add(self.tab_single, text=f"  {self.i18n('tab_convert')}  ")
+        nb.add(self.tab_resize, text=f"  {self.i18n('tab_resize')}  ")
+        nb.add(self.tab_batch,  text=f"  {self.i18n('tab_batch')}  ")
 
         self._build_single(self.tab_single, PAD)
         self._build_resize(self.tab_resize, PAD)
@@ -61,7 +93,7 @@ class App(tk.Tk):
         ttk.Separator(self, orient="horizontal").pack(fill="x", padx=10, pady=(8, 0))
 
         # Log area
-        log_frame = ttk.LabelFrame(self, text="Log", padding=6)
+        log_frame = ttk.LabelFrame(self, text=self.i18n("log"), padding=6)
         log_frame.pack(fill="both", padx=10, pady=(4, 4))
 
         self.log = tk.Text(
@@ -94,50 +126,50 @@ class App(tk.Tk):
         self.s_qual = tk.IntVar(value=85)
         self.s_w    = tk.StringVar()
         self.s_h    = tk.StringVar()
-        self.s_mode = tk.StringVar(value="Proporsional (fit)")
+        self.s_mode = tk.StringVar(value=self.i18n("resize_fit"))
 
         f = ttk.Frame(parent, padding=8)
         f.pack(fill="both", expand=True)
 
-        self._row(f, 0, "File input", self.s_src,
+        self._row(f, 0, self.i18n("file_input"), self.s_src,
                   lambda: self._pick_src(self.s_src, self.s_dst, self.s_fmt))
-        self._row(f, 1, "File output", self.s_dst,
+        self._row(f, 1, self.i18n("file_output"), self.s_dst,
                   lambda: self._save_as(self.s_dst, self.s_fmt))
 
         ttk.Separator(f, orient="h").grid(row=2, column=0, columnspan=3, sticky="ew", pady=6)
 
         # Format output
-        ttk.Label(f, text="Format output").grid(row=3, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("format_output")).grid(row=3, column=0, sticky="w", **PAD)
         cb = ttk.Combobox(f, textvariable=self.s_fmt, values=OUTPUT_FORMATS,
                           state="readonly", width=12)
         cb.grid(row=3, column=1, sticky="w", **PAD)
         cb.bind("<<ComboboxSelected>>", lambda e: self._update_dst_ext(self.s_dst, self.s_fmt))
 
         # Kualitas
-        ttk.Label(f, text="Kualitas").grid(row=4, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("quality")).grid(row=4, column=0, sticky="w", **PAD)
         qf = ttk.Frame(f)
         qf.grid(row=4, column=1, columnspan=2, sticky="ew", **PAD)
         ttk.Scale(qf, from_=1, to=100, variable=self.s_qual, orient="horizontal", length=200,
                   command=lambda v: self.s_qual.set(int(float(v)))).pack(side="left")
         ttk.Label(qf, textvariable=self.s_qual, width=3).pack(side="left", padx=4)
-        Tooltip(qf, "Hanya berlaku untuk JPEG, WEBP, AVIF")
+        Tooltip(qf, self.i18n("tooltip_quality"))
 
         ttk.Separator(f, orient="h").grid(row=5, column=0, columnspan=3, sticky="ew", pady=6)
-        ttk.Label(f, text="Resize (opsional)", font=("Segoe UI", 9, "bold")
+        ttk.Label(f, text=self.i18n("resize_optional"), font=("Segoe UI", 9, "bold")
                   ).grid(row=6, column=0, columnspan=3, sticky="w", **PAD)
 
-        ttk.Label(f, text="Lebar (px)").grid(row=7, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("width_px")).grid(row=7, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.s_w, width=12).grid(row=7, column=1, sticky="w", **PAD)
-        ttk.Label(f, text="Tinggi (px)").grid(row=8, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("height_px")).grid(row=8, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.s_h, width=12).grid(row=8, column=1, sticky="w", **PAD)
 
-        ttk.Label(f, text="Mode resize").grid(row=9, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("mode_resize")).grid(row=9, column=0, sticky="w", **PAD)
         ttk.Combobox(f, textvariable=self.s_mode, state="readonly", width=20,
-                     values=["Proporsional (fit)", "Tepat (exact)",
-                             "Thumbnail (crop)", "Persentase (%)"]
+                     values=[self.i18n("resize_fit"), self.i18n("resize_exact"),
+                             self.i18n("resize_thumbnail"), self.i18n("resize_percent")]
                      ).grid(row=9, column=1, sticky="w", **PAD)
 
-        ttk.Button(f, text="Konversi Sekarang", command=self._run_single
+        ttk.Button(f, text=self.i18n("btn_convert_now"), command=self._run_single
                    ).grid(row=10, column=0, columnspan=3, pady=(10, 4), ipadx=20)
         f.columnconfigure(1, weight=1)
 
@@ -150,46 +182,47 @@ class App(tk.Tk):
         self.r_scale = tk.StringVar()
         self.r_maxw  = tk.StringVar()
         self.r_maxh  = tk.StringVar()
-        self.r_mode  = tk.StringVar(value="Proporsional (fit)")
+        self.r_mode  = tk.StringVar(value=self.i18n("resize_fit"))
         self.r_qual  = tk.IntVar(value=90)
 
         f = ttk.Frame(parent, padding=8)
         f.pack(fill="both", expand=True)
 
-        self._row(f, 0, "File input", self.r_src,
+        self._row(f, 0, self.i18n("file_input"), self.r_src,
                   lambda: self._pick_src(self.r_src, self.r_dst, None))
-        self._row(f, 1, "File output", self.r_dst,
+        self._row(f, 1, self.i18n("file_output"), self.r_dst,
                   lambda: self._save_as(self.r_dst, None))
 
         ttk.Separator(f, orient="h").grid(row=2, column=0, columnspan=3, sticky="ew", pady=6)
 
         # Resize parameters
-        for row, lbl, var, tip in [
-            (3, "Lebar (px)",  self.r_w,    "Kosongkan jika tidak dipakai"),
-            (4, "Tinggi (px)", self.r_h,    "Kosongkan jika tidak dipakai"),
-            (5, "Skala (%)",   self.r_scale,"Contoh: 50 = setengah ukuran"),
-            (6, "Maks lebar",  self.r_maxw, "Batas lebar maksimal"),
-            (7, "Maks tinggi", self.r_maxh, "Batas tinggi maksimal"),
+        for row, key_lbl, var, key_tip in [
+            (3, "width_px",  self.r_w,    "tooltip_width"),
+            (4, "height_px", self.r_h,    "tooltip_height"),
+            (5, "scale_percent",   self.r_scale,"tooltip_scale"),
+            (6, "max_width",  self.r_maxw, "tooltip_max_w"),
+            (7, "max_height", self.r_maxh, "tooltip_max_h"),
         ]:
-            ttk.Label(f, text=lbl).grid(row=row, column=0, sticky="w", **PAD)
+            ttk.Label(f, text=self.i18n(key_lbl)).grid(row=row, column=0, sticky="w", **PAD)
             e = ttk.Entry(f, textvariable=var, width=12)
             e.grid(row=row, column=1, sticky="w", **PAD)
-            Tooltip(e, tip)
+            Tooltip(e, self.i18n(key_tip))
 
-        ttk.Label(f, text="Mode").grid(row=8, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("mode")).grid(row=8, column=0, sticky="w", **PAD)
         ttk.Combobox(f, textvariable=self.r_mode, state="readonly", width=20,
-                     values=["Proporsional (fit)", "Tepat (exact)", "Thumbnail (crop)"]
+                     values=[self.i18n("resize_fit"), self.i18n("resize_exact"), 
+                             self.i18n("resize_thumbnail")]
                      ).grid(row=8, column=1, sticky="w", **PAD)
 
         # Kualitas
-        ttk.Label(f, text="Kualitas").grid(row=9, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("quality")).grid(row=9, column=0, sticky="w", **PAD)
         qf = ttk.Frame(f)
         qf.grid(row=9, column=1, sticky="ew", **PAD)
         ttk.Scale(qf, from_=1, to=100, variable=self.r_qual, orient="horizontal", length=180,
                   command=lambda v: self.r_qual.set(int(float(v)))).pack(side="left")
         ttk.Label(qf, textvariable=self.r_qual, width=3).pack(side="left", padx=4)
 
-        ttk.Button(f, text="Resize Sekarang", command=self._run_resize
+        ttk.Button(f, text=self.i18n("btn_resize_now"), command=self._run_resize
                    ).grid(row=10, column=0, columnspan=3, pady=(10, 4), ipadx=20)
         f.columnconfigure(1, weight=1)
 
@@ -208,26 +241,26 @@ class App(tk.Tk):
         f.pack(fill="both", expand=True)
 
         # Input/output directories
-        ttk.Label(f, text="Folder input").grid(row=0, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("folder_input")).grid(row=0, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.b_indir, width=30).grid(row=0, column=1, sticky="ew", **PAD)
-        ttk.Button(f, text="Pilih...",
+        ttk.Button(f, text=self.i18n("select_btn"),
                    command=lambda: self.b_indir.set(filedialog.askdirectory() or self.b_indir.get())
                    ).grid(row=0, column=2, **PAD)
 
-        ttk.Label(f, text="Folder output").grid(row=1, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("folder_output")).grid(row=1, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.b_outdir, width=30).grid(row=1, column=1, sticky="ew", **PAD)
-        ttk.Button(f, text="Pilih...",
+        ttk.Button(f, text=self.i18n("select_btn"),
                    command=lambda: self.b_outdir.set(filedialog.askdirectory() or self.b_outdir.get())
                    ).grid(row=1, column=2, **PAD)
 
         ttk.Separator(f, orient="h").grid(row=2, column=0, columnspan=3, sticky="ew", pady=6)
 
         # Format dan kualitas
-        ttk.Label(f, text="Format output").grid(row=3, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("format_output")).grid(row=3, column=0, sticky="w", **PAD)
         ttk.Combobox(f, textvariable=self.b_fmt, values=OUTPUT_FORMATS,
                      state="readonly", width=12).grid(row=3, column=1, sticky="w", **PAD)
 
-        ttk.Label(f, text="Kualitas").grid(row=4, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("quality")).grid(row=4, column=0, sticky="w", **PAD)
         qf = ttk.Frame(f)
         qf.grid(row=4, column=1, sticky="ew", **PAD)
         ttk.Scale(qf, from_=1, to=100, variable=self.b_qual, orient="horizontal", length=180,
@@ -237,18 +270,18 @@ class App(tk.Tk):
         ttk.Separator(f, orient="h").grid(row=5, column=0, columnspan=3, sticky="ew", pady=6)
 
         # Resize parameters
-        ttk.Label(f, text="Lebar (px)").grid(row=6, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("width_px")).grid(row=6, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.b_w, width=12).grid(row=6, column=1, sticky="w", **PAD)
-        ttk.Label(f, text="Tinggi (px)").grid(row=7, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("height_px")).grid(row=7, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.b_h, width=12).grid(row=7, column=1, sticky="w", **PAD)
-        ttk.Label(f, text="Skala (%)").grid(row=8, column=0, sticky="w", **PAD)
+        ttk.Label(f, text=self.i18n("scale_percent")).grid(row=8, column=0, sticky="w", **PAD)
         ttk.Entry(f, textvariable=self.b_scale, width=12).grid(row=8, column=1, sticky="w", **PAD)
 
         # Recursive option
-        ttk.Checkbutton(f, text="Masuk subfolder (recursive)", variable=self.b_rec
+        ttk.Checkbutton(f, text=self.i18n("recursive"), variable=self.b_rec
                         ).grid(row=9, column=0, columnspan=3, sticky="w", **PAD)
 
-        ttk.Button(f, text="Mulai Batch Konversi", command=self._run_batch
+        ttk.Button(f, text=self.i18n("btn_batch_start"), command=self._run_batch
                    ).grid(row=10, column=0, columnspan=3, pady=(10, 4), ipadx=20)
         f.columnconfigure(1, weight=1)
 
@@ -257,7 +290,7 @@ class App(tk.Tk):
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", padx=10, pady=4)
         ttk.Entry(parent, textvariable=var, width=32).grid(row=row, column=1,
                                                             sticky="ew", padx=4, pady=4)
-        ttk.Button(parent, text="Pilih...", command=cmd, width=8).grid(row=row, column=2,
+        ttk.Button(parent, text=self.i18n("select_btn"), command=cmd, width=8).grid(row=row, column=2,
                                                                          padx=4, pady=4)
 
     def _update_dst_ext(self, dst_var, fmt_var):
@@ -326,18 +359,21 @@ class App(tk.Tk):
     @staticmethod
     def _mode_str(mode_label: str) -> str:
         """Convert mode label ke mode string untuk processing."""
-        return {
-            "Proporsional (fit)": "fit",
-            "Tepat (exact)":      "exact",
-            "Thumbnail (crop)":   "thumbnail",
-        }.get(mode_label, "fit")
+        # Map all possible translations to internal mode key
+        mode_map = {
+            "Proportional (fit)": "fit", "Proporsional (fit)": "fit", "fit": "fit",
+            "Exact": "exact", "Tepat (exact)": "exact", "exact": "exact",
+            "Thumbnail (crop)": "thumbnail", "Thumbnail (crop)": "thumbnail", "thumbnail": "thumbnail",
+        }
+        return mode_map.get(mode_label, "fit")
 
     def _run_single(self):
         """Runner untuk konversi satu file."""
         src = self.s_src.get().strip()
         dst = self.s_dst.get().strip()
         if not src or not dst:
-            messagebox.showwarning("Input kurang", "Pilih file input dan output terlebih dahulu.")
+            messagebox.showwarning(self.i18n("error_input_missing"), 
+                                  self.i18n("error_select_file"))
             return
 
         fmt   = self.s_fmt.get()
@@ -346,7 +382,7 @@ class App(tk.Tk):
         h     = int_or_none(self.s_h.get())
         mode  = self._mode_str(self.s_mode.get())
         scale = None
-        if "Persentase" in self.s_mode.get():
+        if self.i18n("resize_percent") in self.s_mode.get():
             scale = float_or_none(self.s_w.get())
             if scale:
                 scale = scale / 100
@@ -369,9 +405,9 @@ class App(tk.Tk):
                 dst_p = Path(dst).with_suffix(ext)
                 save_image(img, dst_p, quality=qual, fmt_override=fmt)
                 self._update_progress(100)
-                self._log(f"✓  {Path(src).name}  →  {dst_p.name}  {img.size}", "ok")
+                self._log(f"{self.i18n('log_success')}  {Path(src).name}  {self.i18n('log_arrow')}  {dst_p.name}  {img.size}", "ok")
             except Exception as e:
-                self._log(f"✗  {e}", "err")
+                self._log(f"{self.i18n('log_error')}  {e}", "err")
                 traceback.print_exc()
             finally:
                 self._set_progress(False)
@@ -383,7 +419,8 @@ class App(tk.Tk):
         src = self.r_src.get().strip()
         dst = self.r_dst.get().strip()
         if not src or not dst:
-            messagebox.showwarning("Input kurang", "Pilih file input dan output terlebih dahulu.")
+            messagebox.showwarning(self.i18n("error_input_missing"), 
+                                  self.i18n("error_select_file"))
             return
 
         w         = int_or_none(self.r_w.get())
@@ -410,9 +447,9 @@ class App(tk.Tk):
                 self._update_progress(70)
                 save_image(img, Path(dst), quality=qual)
                 self._update_progress(100)
-                self._log(f"✓  {Path(src).name}  →  {Path(dst).name}  {img.size}", "ok")
+                self._log(f"{self.i18n('log_success')}  {Path(src).name}  {self.i18n('log_arrow')}  {Path(dst).name}  {img.size}", "ok")
             except Exception as e:
-                self._log(f"✗  {e}", "err")
+                self._log(f"{self.i18n('log_error')}  {e}", "err")
             finally:
                 self._set_progress(False)
 
@@ -423,7 +460,8 @@ class App(tk.Tk):
         indir  = self.b_indir.get().strip()
         outdir = self.b_outdir.get().strip()
         if not indir or not outdir:
-            messagebox.showwarning("Input kurang", "Pilih folder input dan output.")
+            messagebox.showwarning(self.i18n("error_input_missing"), 
+                                  self.i18n("error_select_folder"))
             return
 
         fmt       = self.b_fmt.get()
@@ -443,7 +481,7 @@ class App(tk.Tk):
             out_p = Path(outdir)
             files = [f for f in sorted(in_p.glob(pattern))
                      if f.is_file() and f.suffix.lower() in INPUT_EXTS]
-            self._log(f"→  {len(files)} file ditemukan di {indir}", "inf")
+            self._log(f"{self.i18n('log_arrow')}  {len(files)} {self.i18n('info_files_found')} {indir}", "inf")
             total = len(files)
             for idx, f in enumerate(files, 1):
                 dst = out_p / (f.stem + ext_out)
@@ -456,14 +494,15 @@ class App(tk.Tk):
                         if w or h or scale:
                             img = do_resize(img, width=w, height=h, scale=scale)
                     save_image(img, dst, quality=qual, fmt_override=fmt)
-                    self._log(f"✓  {f.name}  →  {dst.name}  {img.size}", "ok")
+                    self._log(f"{self.i18n('log_success')}  {f.name}  {self.i18n('log_arrow')}  {dst.name}  {img.size}", "ok")
                     ok_count += 1
                 except Exception as e:
-                    self._log(f"✗  {f.name}: {e}", "err")
+                    self._log(f"{self.i18n('log_error')}  {f.name}: {e}", "err")
                     err_count += 1
                 progress_pct = int((idx / total) * 100)
                 self._update_progress(progress_pct)
-            self._log(f"Selesai: {ok_count} berhasil, {err_count} gagal.", "inf")
+            completed_msg = f"{self.i18n('info_completed')} {ok_count} {self.i18n('info_ok')}, {err_count} {self.i18n('info_err')}."
+            self._log(completed_msg, "inf")
             self._set_progress(False)
 
         threading.Thread(target=task, daemon=True).start()
