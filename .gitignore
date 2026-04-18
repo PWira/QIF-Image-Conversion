@@ -132,3 +132,6 @@ Thumbs.db
 # Project specific
 *.exe
 dist/
+
+#Extra utils
+depricated/
