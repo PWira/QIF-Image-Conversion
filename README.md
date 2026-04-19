@@ -1,4 +1,4 @@
-# Image Resolver
+# Image Conversion
 
 A comprehensive GUI application for quick image format conversion and resizing using Python and tkinter.
 
@@ -83,7 +83,7 @@ python main.py
 ## Project Structure
 
 ```
-ImageResolver/
+ImageConversion/
 ├── main.py                      # Entry point aplikasi
 ├── src/                         # Source code package
 │   ├── __init__.py              # Package initializer
@@ -116,7 +116,7 @@ To create a standalone executable using PyInstaller:
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon=monolight.png --name="Image Resolver" --distpath="./dist" main.py
+pyinstaller --onefile --windowed --icon=monolight.png --name="Image Conversion" --distpath="./dist" main.py
 ```
 
 The executable will be available in `./dist/` folder.
