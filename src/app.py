@@ -10,7 +10,7 @@ from pathlib import Path
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from PIL import Image, ImageTk
+from PIL import Image
 
 from src.constants import OUTPUT_FORMATS, EXT_MAP, INPUT_EXTS
 from src.image_processor import open_image, save_image, do_resize
