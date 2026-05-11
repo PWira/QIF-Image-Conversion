@@ -39,7 +39,7 @@ class App(tk.Tk):
     def _set_icon(self):
         """Set icon aplikasi jika monolight.png tersedia."""
         try:
-            self.iconphoto(True, ImageTk.PhotoImage(Image.open("monolight.png")))
+            self.iconphoto(True, Image.PhotoImage(Image.open("monolight.png")))
         except Exception:
             pass
 
@@ -62,13 +62,14 @@ class App(tk.Tk):
     def _rebuild_ui(self):
         """Rebuild UI dengan bahasa baru."""
         # Clear existing tabs
-        for tab in self.tab_single, self.tab_resize, self.tab_batch:
+        for tab in self.tab_single, self.tab_resize, self.tab_crop, self.tab_batch:
             for w in tab.winfo_children():
                 w.destroy()
         
         PAD = dict(padx=10, pady=4)
         self._build_single(self.tab_single, PAD)
         self._build_resize(self.tab_resize, PAD)
+        self._build_crop(self.tab_crop, PAD)
         self._build_batch(self.tab_batch, PAD)
 
     def _build_ui(self):
@@ -80,14 +81,17 @@ class App(tk.Tk):
 
         self.tab_single = ttk.Frame(nb)
         self.tab_resize = ttk.Frame(nb)
+        self.tab_crop   = ttk.Frame(nb)
         self.tab_batch  = ttk.Frame(nb)
 
         nb.add(self.tab_single, text=f"  {self.i18n('tab_convert')}  ")
         nb.add(self.tab_resize, text=f"  {self.i18n('tab_resize')}  ")
+        nb.add(self.tab_crop, text=f"  {self.i18n('tab_crop')}  ")
         nb.add(self.tab_batch,  text=f"  {self.i18n('tab_batch')}  ")
 
         self._build_single(self.tab_single, PAD)
         self._build_resize(self.tab_resize, PAD)
+        self._build_crop(self.tab_crop, PAD)
         self._build_batch(self.tab_batch, PAD)
 
         ttk.Separator(self, orient="horizontal").pack(fill="x", padx=10, pady=(8, 0))
@@ -225,6 +229,12 @@ class App(tk.Tk):
         ttk.Button(f, text=self.i18n("btn_resize_now"), command=self._run_resize
                    ).grid(row=10, column=0, columnspan=3, pady=(10, 4), ipadx=20)
         f.columnconfigure(1, weight=1)
+
+    def _build_crop(self, parent, PAD):
+        """Build tab Crop."""
+        # Placeholder untuk tab Crop jika ingin ditambahkan nanti
+        ttk.Label(parent, text=self.i18n("crop_coming_soon"), font=("Segoe UI", 10, "italic")
+                  ).pack(padx=10, pady=10)
 
     def _build_batch(self, parent, PAD):
         """Build tab Batch."""
@@ -399,7 +409,7 @@ class App(tk.Tk):
                     img = open_image(Path(src))
                     self._update_progress(40)
                     if w or h or scale:
-                        img = do_resize(img, width=w, height=h, scale=scale, mode=mode)
+                        img = do_resize(img, width=w, height=h, scale=scale, mode=mode, preview=True)
                 self._update_progress(70)
                 ext   = EXT_MAP.get(fmt, Path(dst).suffix)
                 dst_p = Path(dst).with_suffix(ext)
@@ -443,7 +453,7 @@ class App(tk.Tk):
                     img = open_image(Path(src))
                     self._update_progress(40)
                     img = do_resize(img, width=w, height=h, scale=scale,
-                                    max_w=maxw, max_h=maxh, mode=mode)
+                                    max_w=maxw, max_h=maxh, mode=mode, preview=True)
                 self._update_progress(70)
                 save_image(img, Path(dst), quality=qual)
                 self._update_progress(100)

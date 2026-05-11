@@ -10,6 +10,7 @@ TRANSLATIONS = {
         "title": "Image Converter & Resizer",
         "tab_convert": "Convert",
         "tab_resize": "Resize",
+        "tab_crop": "Crop",
         "tab_batch": "Batch",
         
         # Common UI
@@ -45,7 +46,11 @@ TRANSLATIONS = {
         "tooltip_scale": "Example: 50 = half size",
         "tooltip_max_w": "Maximum width limit",
         "tooltip_max_h": "Maximum height limit",
-        
+
+        # Tab: Crop
+        "tab_crop_label": "Crop",
+        "crop_coming_soon": "Coming soon...",
+
         # Tab: Batch
         "tab_batch_label": "Batch",
         "folder_input": "Input folder",
@@ -72,6 +77,7 @@ TRANSLATIONS = {
         "title": "Image Converter & Resizer",
         "tab_convert": "Konversi",
         "tab_resize": "Resize",
+        "tab_crop": "Crop",
         "tab_batch": "Batch",
         
         # Common UI
@@ -108,6 +114,10 @@ TRANSLATIONS = {
         "tooltip_max_w": "Batas lebar maksimal",
         "tooltip_max_h": "Batas tinggi maksimal",
         
+        # Tab: Crop
+        "tab_crop_label": "Crop",
+        "crop_coming_soon": "Segera Tiba...",
+
         # Tab: Batch
         "tab_batch_label": "Batch",
         "folder_input": "Folder input",

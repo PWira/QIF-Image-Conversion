@@ -117,7 +117,8 @@ def do_resize(
     scale=None,
     max_w=None,
     max_h=None,
-    mode="fit"
+    mode="fit",
+    preview=False
 ) -> Image.Image:
     """
     Resize gambar dengan berbagai mode.
@@ -130,14 +131,17 @@ def do_resize(
         max_w: Lebar maksimal
         max_h: Tinggi maksimal
         mode: "fit"=proporsional, "exact"=tepat, "thumbnail"=crop
-    
+        preview: Jika True, tampilkan preview hasil resize
     Returns:
         PIL Image object (resized)
     """
     ow, oh = img.size
     
     if scale:
-        return img.resize((int(ow * scale), int(oh * scale)), Image.LANCZOS)
+        result = img.resize((int(ow * scale), int(oh * scale)), Image.LANCZOS)
+        if preview:
+            result.show()
+        return result
     
     if max_w or max_h:
         tw, th = ow, oh
@@ -147,20 +151,35 @@ def do_resize(
         if max_h and th > max_h:
             tw = int(tw * max_h / th)
             th = max_h
-        return img.resize((tw, th), Image.LANCZOS)
+        result = img.resize((tw, th), Image.LANCZOS)
+        if preview:
+            result.show()
+        return result
     
     if width and height:
         if mode == "exact":
-            return img.resize((width, height), Image.LANCZOS)
-        if mode == "thumbnail":
-            return ImageOps.fit(img, (width, height), Image.LANCZOS)
-        r = min(width / ow, height / oh)
-        return img.resize((int(ow * r), int(oh * r)), Image.LANCZOS)
+            result = img.resize((width, height), Image.LANCZOS)
+        elif mode == "thumbnail":
+            result = ImageOps.fit(img, (width, height), Image.LANCZOS)
+        else:
+            r = min(width / ow, height / oh)
+            result = img.resize((int(ow * r), int(oh * r)), Image.LANCZOS)
+        if preview:
+            result.show()
+        return result
     
     if width:
-        return img.resize((width, int(oh * width / ow)), Image.LANCZOS)
+        result = img.resize((width, int(oh * width / ow)), Image.LANCZOS)
+        if preview:
+            result.show()
+        return result
     
     if height:
-        return img.resize((int(ow * height / oh), height), Image.LANCZOS)
+        result = img.resize((int(ow * height / oh), height), Image.LANCZOS)
+        if preview:
+            result.show()
+        return result
     
+    if preview:
+        img.show()
     return img
